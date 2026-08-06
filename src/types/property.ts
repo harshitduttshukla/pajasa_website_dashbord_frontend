@@ -1,0 +1,91 @@
+export interface Property {
+  id: number;
+  title: string;
+  slug: string;
+  description?: string | null;
+  excerpt?: string | null;
+  status: string;
+  category?: string | null;
+  rent_type?: string | null;
+  city_id?: number | null;
+  city_name?: string | null;
+  neighborhood?: string | null;
+  address?: string | null;
+  state?: string | null;
+  zip_code?: string | null;
+  country?: string | null;
+  price: number;
+  price_before_label?: string | null;
+  price_after_label?: string | null;
+  price_per_week?: number | null;
+  price_per_month?: number | null;
+  cleaning_fee?: number | null;
+  security_deposit?: number | null;
+  bedrooms: number;
+  bathrooms: number;
+  rooms: number;
+  size_sqft?: number | null;
+  guest_no: number;
+  min_days_booking: number;
+  featured_image?: string | null;
+  gallery_images: string[];
+  is_featured: boolean;
+  instant_booking: boolean;
+  smoking_allowed: boolean;
+  pets_allowed: boolean;
+  party_allowed: boolean;
+  children_allowed: boolean;
+  amenities: string[];
+  cancellation_policy?: string | null;
+  other_rules?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PropertyFormData {
+  title: string;
+  slug?: string;
+  description?: string;
+  excerpt?: string;
+  status?: string;
+  category?: string;
+  rent_type?: string;
+  city_id?: number | null;
+  neighborhood?: string;
+  address?: string;
+  state?: string;
+  zip_code?: string;
+  country?: string;
+  price?: number;
+  price_before_label?: string;
+  price_after_label?: string;
+  price_per_week?: number;
+  price_per_month?: number;
+  cleaning_fee?: number;
+  security_deposit?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  rooms?: number;
+  size_sqft?: number;
+  guest_no?: number;
+  min_days_booking?: number;
+  featured_image?: string;
+  gallery_images?: string[];
+  is_featured?: boolean;
+  instant_booking?: boolean;
+  smoking_allowed?: boolean;
+  pets_allowed?: boolean;
+  party_allowed?: boolean;
+  children_allowed?: boolean;
+  amenities?: string[];
+  cancellation_policy?: string;
+  other_rules?: string;
+}
+
+export interface PaginatedProperties {
+  items: Property[];
+  total: number;
+  page: number;
+  limit: number;
+  total_pages: number;
+}
