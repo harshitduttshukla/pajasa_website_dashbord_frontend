@@ -171,21 +171,132 @@ export async function bulkDeleteProperties(ids: number[]): Promise<void> {
   }
 }
 
-// ---------------- UPLOAD API ----------------
+// ---------------- UPLOAD API (DIRECT TO S3) ----------------
 
-export async function uploadImage(file: File): Promise<{ filename: string; url: string }> {
-  const formData = new FormData();
-  formData.append('file', file);
-
-  const res = await fetch(`${API_BASE_URL}/api/upload`, {
+export async function getPresignedUploadUrl(params: {
+  filename: string;
+  content_type: string;
+  size: number;
+  folder?: string;
+}): Promise<{ upload_url: string; key: string; url: string }> {
+  const res = await fetch(`${API_BASE_URL}/api/upload/presign`, {
     method: 'POST',
-    body: formData,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
   });
 
   if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ detail: 'Failed to upload image' }));
-    throw new Error(errorData.detail || 'Failed to upload image');
+    const errorData = await res.json().catch(() => ({ detail: 'Failed to request upload URL' }));
+    throw new Error(errorData.detail || 'Failed to request direct upload authorization');
   }
 
   return res.json();
 }
+
+export async function uploadImage(
+  file: File,
+  folder: string = 'properties'
+): Promise<{ filename: string; key: string; url: string }> {
+  // 1. Request presigned PUT URL from FastAPI (stateless, no DB writes)
+  const contentType = file.type || 'application/octet-stream';
+  const presign = await getPresignedUploadUrl({
+    filename: file.name,
+    content_type: contentType,
+    size: file.size,
+    folder,
+  });
+
+  // 2. Direct browser upload to S3 using PUT (never sends image bytes to FastAPI)
+  const uploadTargetUrl = presign.upload_url.startsWith('http')
+    ? presign.upload_url
+    : `${API_BASE_URL}${presign.upload_url}`;
+
+  const s3Res = await fetch(uploadTargetUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': contentType,
+    },
+    body: file,
+  });
+
+  if (!s3Res.ok) {
+    throw new Error(`Direct image upload to S3 failed (HTTP status ${s3Res.status})`);
+  }
+
+  // 3. Return key (to store in database) and url (CloudFront URL to preview)
+  return {
+    filename: file.name,
+    key: presign.key,
+    url: presign.url,
+  };
+}
+
+// ---------------- BLOG API ----------------
+
+export async function fetchBlogs(params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+  sort_by?: string;
+  order?: string;
+}): Promise<{ items: any[]; total: number; page: number; limit: number; total_pages: number }> {
+  const queryParams = new URLSearchParams();
+  if (params.page) queryParams.set('page', params.page.toString());
+  if (params.limit) queryParams.set('limit', params.limit.toString());
+  if (params.search) queryParams.set('search', params.search);
+  if (params.category) queryParams.set('category', params.category);
+  if (params.sort_by) queryParams.set('sort_by', params.sort_by);
+  if (params.order) queryParams.set('order', params.order);
+
+  const res = await fetch(`${API_BASE_URL}/api/blogs?${queryParams.toString()}`, {
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch blogs');
+  }
+
+  return res.json();
+}
+
+export async function createBlog(data: any): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/blogs`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ detail: 'Failed to create blog' }));
+    throw new Error(errorData.detail || 'Failed to create blog');
+  }
+
+  return res.json();
+}
+
+export async function updateBlog(id: number, data: any): Promise<any> {
+  const res = await fetch(`${API_BASE_URL}/api/blogs/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({ detail: 'Failed to update blog' }));
+    throw new Error(errorData.detail || 'Failed to update blog');
+  }
+
+  return res.json();
+}
+
+export async function deleteBlog(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE_URL}/api/blogs/${id}`, {
+    method: 'DELETE',
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to delete blog');
+  }
+}
+

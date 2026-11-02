@@ -48,9 +48,9 @@ export function AddCityForm({ allCities, onCityAdded }: AddCityFormProps) {
     setMessage(null);
 
     try {
-      const res = await uploadImage(file);
-      setFeaturedImage(res.url);
-      setMessage({ type: 'success', text: 'Image uploaded successfully!' });
+      const res = await uploadImage(file, 'cities');
+      setFeaturedImage(res.key);
+      setMessage({ type: 'success', text: 'Image uploaded successfully to S3!' });
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Image upload failed' });
     } finally {
