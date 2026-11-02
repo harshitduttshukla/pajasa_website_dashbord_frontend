@@ -17,8 +17,15 @@ import { EditPropertyModal } from '../components/EditPropertyModal';
 import { Property, PaginatedProperties } from '../types/property';
 import { fetchProperties } from '../lib/api';
 
+// Blog Components
+import { AddBlogForm } from '../components/AddBlogForm';
+import { BlogTable } from '../components/BlogTable';
+import { EditBlogModal } from '../components/EditBlogModal';
+import { Blog, PaginatedBlogs } from '../types/blog';
+import { fetchBlogs } from '../lib/api';
+
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<'cities' | 'properties'>('cities');
+  const [activeTab, setActiveTab] = useState<'cities' | 'properties' | 'blogs'>('cities');
 
   // ---------- CITIES STATE ----------
   const [paginatedCities, setPaginatedCities] = useState<PaginatedCities>({
@@ -48,8 +55,22 @@ export default function DashboardPage() {
   const [propCityFilter, setPropCityFilter] = useState<number | null>(null);
   const [editingProperty, setEditingProperty] = useState<Property | null>(null);
 
+  // ---------- BLOGS STATE ----------
+  const [paginatedBlogs, setPaginatedBlogs] = useState<PaginatedBlogs>({
+    items: [],
+    total: 0,
+    page: 1,
+    limit: 10,
+    total_pages: 1,
+  });
+  const [blogPage, setBlogPage] = useState(1);
+  const [blogLimit, setBlogLimit] = useState(10);
+  const [blogSearch, setBlogSearch] = useState('');
+  const [editingBlog, setEditingBlog] = useState<Blog | null>(null);
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
 
   // Load Cities Data
   const loadCities = useCallback(async () => {
@@ -83,17 +104,37 @@ export default function DashboardPage() {
     }
   }, [propPage, propLimit, propSearch, propCityFilter]);
 
+  // Load Blogs Data
+  const loadBlogs = useCallback(async () => {
+    try {
+      const res = await fetchBlogs({
+        page: blogPage,
+        limit: blogLimit,
+        search: blogSearch || undefined,
+      });
+      setPaginatedBlogs(res);
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch blogs from backend');
+    }
+  }, [blogPage, blogLimit, blogSearch]);
+
   const loadData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     if (activeTab === 'cities') {
       await loadCities();
-    } else {
+    } else if (activeTab === 'properties') {
       await loadProperties();
       await loadCities();
+    } else {
+      await loadBlogs();
     }
+    // Background count refresh
+    fetchBlogs({ limit: 1 })
+      .then((r) => setPaginatedBlogs((prev) => ({ ...prev, total: r.total })))
+      .catch(() => {});
     setIsLoading(false);
-  }, [activeTab, loadCities, loadProperties]);
+  }, [activeTab, loadCities, loadProperties, loadBlogs]);
 
   useEffect(() => {
     loadData();
@@ -107,6 +148,7 @@ export default function DashboardPage() {
         onTabChange={(tab) => setActiveTab(tab)}
         cityCount={paginatedCities.total}
         propertyCount={paginatedProperties.total}
+        blogCount={paginatedBlogs.total}
       />
 
       {/* Main Content Area */}
@@ -115,17 +157,22 @@ export default function DashboardPage() {
         <header className="bg-white border-b border-slate-200 px-8 py-4 sticky top-0 z-20 shadow-xs flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-              {activeTab === 'cities' ? 'City Management' : 'Property Management'}
+              {activeTab === 'cities'
+                ? 'City Management'
+                : activeTab === 'properties'
+                ? 'Property Management'
+                : 'Blog Article Management'}
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               {activeTab === 'cities'
                 ? 'Create, edit, and organize property cities, custom permalinks, and hierarchies.'
-                : 'Add and manage property listings, custom pricing, amenities, and location settings.'}
+                : activeTab === 'properties'
+                ? 'Add and manage property listings, custom pricing, amenities, and location settings.'
+                : 'Publish, edit, and manage articles that appear on the public website blog section.'}
             </p>
           </div>
-
-
         </header>
+
 
         <main className="p-8 space-y-8 max-w-[1600px] w-full mx-auto">
           {error && (
@@ -224,6 +271,43 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
+          {/* BLOGS MODULE */}
+          {activeTab === 'blogs' && (
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start animate-fadeIn">
+              {/* Left Panel - Add Blog Form */}
+              <div className="lg:col-span-5 sticky top-24">
+                <AddBlogForm onBlogAdded={loadData} />
+              </div>
+
+              {/* Right Panel - Blog Table */}
+              <div className="lg:col-span-7">
+                {isLoading && paginatedBlogs.items.length === 0 ? (
+                  <div className="bg-white border border-slate-200 rounded-2xl p-12 text-center text-slate-500 space-y-3 shadow-sm">
+                    <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-sm font-semibold text-slate-700">Loading blog articles from backend...</p>
+                  </div>
+                ) : (
+                  <BlogTable
+                    paginatedData={paginatedBlogs}
+                    currentPage={blogPage}
+                    searchQuery={blogSearch}
+                    limit={blogLimit}
+                    onPageChange={(page) => setBlogPage(page)}
+                    onSearchChange={(q) => {
+                      setBlogSearch(q);
+                      setBlogPage(1);
+                    }}
+                    onLimitChange={(l) => {
+                      setBlogLimit(l);
+                      setBlogPage(1);
+                    }}
+                    onEditBlog={(b) => setEditingBlog(b)}
+                    onRefresh={loadData}
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
@@ -240,6 +324,13 @@ export default function DashboardPage() {
         cities={allCities}
         onClose={() => setEditingProperty(null)}
         onPropertyUpdated={loadData}
+      />
+
+      <EditBlogModal
+        blog={editingBlog}
+        isOpen={Boolean(editingBlog)}
+        onClose={() => setEditingBlog(null)}
+        onBlogUpdated={loadData}
       />
     </div>
   );

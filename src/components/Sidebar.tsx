@@ -1,14 +1,15 @@
 import React from 'react';
-import { Building2, Home, Globe, LayoutDashboard, Settings } from 'lucide-react';
+import { Building2, Home, BookOpen } from 'lucide-react';
 
 interface SidebarProps {
-  activeTab: 'cities' | 'properties';
-  onTabChange: (tab: 'cities' | 'properties') => void;
+  activeTab: 'cities' | 'properties' | 'blogs';
+  onTabChange: (tab: 'cities' | 'properties' | 'blogs') => void;
   cityCount: number;
   propertyCount: number;
+  blogCount?: number;
 }
 
-export function Sidebar({ activeTab, onTabChange, cityCount, propertyCount }: SidebarProps) {
+export function Sidebar({ activeTab, onTabChange, cityCount, propertyCount, blogCount = 0 }: SidebarProps) {
   return (
     <aside className="w-64 bg-white border-r border-slate-200 h-screen sticky top-0 flex flex-col justify-between z-30 shadow-sm shrink-0">
       <div className="p-6 space-y-6">
@@ -19,7 +20,6 @@ export function Sidebar({ activeTab, onTabChange, cityCount, propertyCount }: Si
           </div>
           <div>
             <h1 className="font-bold text-slate-900 text-base tracking-tight">PAJASA Admin</h1>
-
           </div>
         </div>
 
@@ -32,18 +32,20 @@ export function Sidebar({ activeTab, onTabChange, cityCount, propertyCount }: Si
           {/* Cities Tab */}
           <button
             onClick={() => onTabChange('cities')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'cities'
-              ? 'bg-blue-50 text-blue-600 border border-blue-100 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'cities'
+                ? 'bg-blue-50 text-blue-600 border border-blue-100 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
           >
             <div className="flex items-center gap-3">
               <Building2 className={`w-4 h-4 ${activeTab === 'cities' ? 'text-blue-600' : 'text-slate-400'}`} />
               <span>City Management</span>
             </div>
             <span
-              className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-medium ${activeTab === 'cities' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
-                }`}
+              className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-medium ${
+                activeTab === 'cities' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+              }`}
             >
               {cityCount}
             </span>
@@ -52,10 +54,11 @@ export function Sidebar({ activeTab, onTabChange, cityCount, propertyCount }: Si
           {/* Properties Tab */}
           <button
             onClick={() => onTabChange('properties')}
-            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'properties'
-              ? 'bg-blue-50 text-blue-600 border border-blue-100 shadow-sm'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-              }`}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'properties'
+                ? 'bg-blue-50 text-blue-600 border border-blue-100 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
           >
             <div className="flex items-center gap-3">
               <Home className={`w-4 h-4 ${activeTab === 'properties' ? 'text-blue-600' : 'text-slate-400'}`} />
@@ -65,20 +68,42 @@ export function Sidebar({ activeTab, onTabChange, cityCount, propertyCount }: Si
               </div>
             </div>
             <span
-              className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-medium ${activeTab === 'properties' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
-                }`}
+              className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-medium ${
+                activeTab === 'properties' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+              }`}
             >
               {propertyCount}
             </span>
           </button>
 
-
-
+          {/* Blogs Tab */}
+          <button
+            onClick={() => onTabChange('blogs')}
+            className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'blogs'
+                ? 'bg-blue-50 text-blue-600 border border-blue-100 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <div className="flex items-center gap-3">
+              <BookOpen className={`w-4 h-4 ${activeTab === 'blogs' ? 'text-blue-600' : 'text-slate-400'}`} />
+              <div className="text-left">
+                <div>Blog Articles</div>
+                <div className="text-[10px] text-slate-400 font-normal font-mono">public_blog</div>
+              </div>
+            </div>
+            <span
+              className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-medium ${
+                activeTab === 'blogs' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-500'
+              }`}
+            >
+              {blogCount}
+            </span>
+          </button>
 
         </nav>
       </div>
-
-
     </aside>
   );
 }
+
