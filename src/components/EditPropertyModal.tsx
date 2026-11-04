@@ -17,6 +17,8 @@ export function EditPropertyModal({ property, cities, onClose, onPropertyUpdated
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [price, setPrice] = useState<number>(0);
+  const [pricePerWeek, setPricePerWeek] = useState<number>(0);
+  const [pricePerMonth, setPricePerMonth] = useState<number>(0);
   const [cityId, setCityId] = useState<number | null>(null);
   const [address, setAddress] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
@@ -25,6 +27,7 @@ export function EditPropertyModal({ property, cities, onClose, onPropertyUpdated
   const [guestNo, setGuestNo] = useState(2);
   const [description, setDescription] = useState('');
   const [isFeatured, setIsFeatured] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -34,6 +37,8 @@ export function EditPropertyModal({ property, cities, onClose, onPropertyUpdated
       setTitle(property.title || '');
       setSlug(property.slug || '');
       setPrice(property.price || 0);
+      setPricePerWeek(property.price_per_week || 0);
+      setPricePerMonth(property.price_per_month || 0);
       setCityId(property.city_id || null);
       setAddress(property.address || '');
       setNeighborhood(property.neighborhood || '');
@@ -47,6 +52,12 @@ export function EditPropertyModal({ property, cities, onClose, onPropertyUpdated
   }, [property]);
 
   if (!property) return null;
+
+  // Week = 7 nights, month = 30 nights
+  const fillFromNightly = () => {
+    setPricePerWeek(Math.round(price * 7));
+    setPricePerMonth(Math.round(price * 30));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,6 +73,8 @@ export function EditPropertyModal({ property, cities, onClose, onPropertyUpdated
       title: title.trim(),
       slug: slug.trim() || undefined,
       price: Number(price),
+      price_per_week: Number(pricePerWeek) || 0,
+      price_per_month: Number(pricePerMonth) || 0,
       city_id: cityId ? Number(cityId) : null,
       address: address.trim() || undefined,
       neighborhood: neighborhood.trim() || undefined,
@@ -88,7 +101,7 @@ export function EditPropertyModal({ property, cities, onClose, onPropertyUpdated
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white border border-slate-200 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl text-slate-800">
+      <div className="bg-white border border-slate-200 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl text-slate-800">
         <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between z-10">
           <div>
             <h3 className="text-base font-bold text-slate-900">Edit Property</h3>
@@ -131,17 +144,61 @@ export function EditPropertyModal({ property, cities, onClose, onPropertyUpdated
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Price (₹)</label>
-              <input
-                type="number"
-                value={price}
-                onChange={(e) => setPrice(Number(e.target.value))}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20"
-              />
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Price / Night (₹)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={price}
+                  onChange={(e) => setPrice(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Price / Week (₹)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={pricePerWeek}
+                  onChange={(e) => setPricePerWeek(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                />
+                {pricePerWeek > 0 && (
+                  <p className="mt-1 text-[10px] text-slate-500">≈ ₹{Math.round(pricePerWeek / 7).toLocaleString('en-IN')} / night</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Price / Month (₹)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={pricePerMonth}
+                  onChange={(e) => setPricePerMonth(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                />
+                {pricePerMonth > 0 && (
+                  <p className="mt-1 text-[10px] text-slate-500">≈ ₹{Math.round(pricePerMonth / 30).toLocaleString('en-IN')} / night</p>
+                )}
+              </div>
             </div>
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[10px] text-slate-500">
+                Converter: 1 week = 7 nights, 1 month = 30 nights. Edit the weekly or monthly price to offer a discount.
+              </p>
+              <button
+                type="button"
+                onClick={fillFromNightly}
+                disabled={!price}
+                className="shrink-0 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-[11px] font-semibold rounded-lg border border-blue-200 disabled:opacity-50"
+              >
+                Calculate from nightly
+              </button>
+            </div>
+          </div>
 
+          <div className="grid grid-cols-1 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">City</label>
               <select
@@ -202,13 +259,41 @@ export function EditPropertyModal({ property, cities, onClose, onPropertyUpdated
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Description</label>
-            <textarea
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 resize-none"
-            />
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold text-slate-700">Description</label>
+              <div className="flex rounded-lg border border-slate-200 overflow-hidden text-[11px] font-semibold">
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(false)}
+                  className={`px-3 py-1 ${!showPreview ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowPreview(true)}
+                  className={`px-3 py-1 ${showPreview ? 'bg-blue-600 text-white' : 'bg-white text-slate-600 hover:bg-slate-50'}`}
+                >
+                  Preview
+                </button>
+              </div>
+            </div>
+            {showPreview ? (
+              <div
+                className="w-full h-80 overflow-y-auto px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 leading-relaxed whitespace-pre-line [&_h2]:text-base [&_h2]:font-bold [&_h2]:text-slate-900 [&_h3]:font-bold [&_strong]:font-semibold [&_a]:text-blue-600 [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5"
+                dangerouslySetInnerHTML={{ __html: description }}
+              />
+            ) : (
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                spellCheck
+                className="w-full h-80 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm leading-relaxed text-slate-900 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500/20 resize-y"
+              />
+            )}
+            <p className="mt-1 text-[10px] text-slate-500">
+              HTML tags like &lt;h2&gt;, &lt;strong&gt; and &lt;a&gt; are kept. Use Preview to check how it will look.
+            </p>
           </div>
 
           <div className="flex items-center gap-2 pt-2">
